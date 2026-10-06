@@ -1,84 +1,309 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Experiment Results</title>
+<title>AnimBridge | Interactive Animation Results</title>
 
 <style>
+:root{
+  --bg:#f4f6f9;
+  --surface:#ffffff;
+  --surface-soft:#f8fafc;
+  --text:#111827;
+  --muted:#667085;
+  --subtle:#98a2b3;
+  --line:#e4e7ec;
+  --line-strong:#d0d5dd;
+  --accent:#3157d5;
+  --accent-soft:#eef2ff;
+  --success:#17a673;
+  --shadow:0 10px 30px rgba(16,24,40,.06);
+  --shadow-soft:0 4px 16px rgba(16,24,40,.05);
+}
+
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
 body{
   margin:0;
-  background:#f5f5f7;
-  color:#18181b;
-  font-family:Arial,Helvetica,"Microsoft YaHei",sans-serif
+  background:
+    radial-gradient(circle at 12% -8%,rgba(49,87,213,.08),transparent 32%),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55;
 }
+
 .page{
-  width:min(1600px,calc(100% - 40px));
+  width:min(1600px,calc(100% - 48px));
   margin:0 auto;
-  padding:30px 0 60px
+  padding:36px 0 72px;
 }
-.header{margin-bottom:28px}
-.header h1{margin:0;font-size:32px}
-.header p{margin:8px 0 0;color:#71717a;font-size:14px}
-.summary{margin-top:8px;color:#8a8a93;font-size:13px}
+
+.hero{
+  position:relative;
+  overflow:hidden;
+  padding:48px 52px;
+  margin-bottom:24px;
+  background:linear-gradient(135deg,#ffffff 0%,#f8faff 64%,#eef2ff 100%);
+  border:1px solid var(--line);
+  border-radius:24px;
+  box-shadow:var(--shadow);
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  width:320px;
+  height:320px;
+  right:-110px;
+  top:-150px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(49,87,213,.13),rgba(49,87,213,0) 68%);
+  pointer-events:none;
+}
+.eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:13px;
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.eyebrow::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 5px rgba(49,87,213,.10);
+}
+.hero h1{
+  margin:0;
+  font-size:clamp(42px,5vw,64px);
+  line-height:1;
+  letter-spacing:-.045em;
+}
+.hero .subtitle{
+  margin:15px 0 0;
+  max-width:1120px;
+  font-size:clamp(20px,2vw,27px);
+  line-height:1.28;
+  font-weight:600;
+  letter-spacing:-.02em;
+  color:#344054;
+}
+.hero .lead{
+  max-width:1050px;
+  margin:20px 0 0;
+  color:var(--muted);
+  font-size:15px;
+}
+.hero-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin-top:24px;
+}
+.hero-meta span{
+  display:inline-flex;
+  align-items:center;
+  min-height:30px;
+  padding:5px 10px;
+  background:rgba(255,255,255,.72);
+  border:1px solid #dfe4f2;
+  border-radius:999px;
+  color:#475467;
+  font-size:12px;
+  font-weight:600;
+}
+
+.overview{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(320px,.7fr);
+  gap:18px;
+  margin-bottom:34px;
+}
+.info-card{
+  padding:24px 26px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:var(--shadow-soft);
+}
+.info-card h2,
+.info-card h3{
+  margin:0;
+  letter-spacing:-.02em;
+}
+.info-card h2{font-size:23px}
+.info-card h3{font-size:16px}
+.info-card p{
+  margin:10px 0 0;
+  color:var(--muted);
+  font-size:14px;
+}
+.scope-note{
+  margin-top:16px;
+  padding:13px 15px;
+  background:var(--accent-soft);
+  border:1px solid #d9e0ff;
+  border-radius:12px;
+  color:#445078;
+  font-size:12.5px;
+}
+.scope-note strong{color:#293d8f}
+.guide-list{
+  display:grid;
+  gap:12px;
+  margin-top:14px;
+}
+.guide-item{
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:10px;
+  align-items:start;
+}
+.guide-num{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:26px;
+  height:26px;
+  border-radius:8px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+}
+.guide-item strong{display:block;font-size:13px;color:#344054}
+.guide-item span{display:block;margin-top:2px;color:var(--muted);font-size:12px}
+
+.results-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin:0 2px 18px;
+}
+.results-kicker{
+  color:var(--accent);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.results-header h2{
+  margin:4px 0 0;
+  font-size:28px;
+  letter-spacing:-.025em;
+}
+.summary{
+  color:var(--muted);
+  font-size:13px;
+  white-space:nowrap;
+}
+
 #errorBox{
   display:none;
   margin-bottom:22px;
-  padding:14px;
-  background:#fef2f2;
-  border:1px solid #fecaca;
-  border-radius:10px;
-  color:#991b1b;
+  padding:14px 16px;
+  background:#fff2f0;
+  border:1px solid #ffd4ce;
+  border-radius:12px;
+  color:#9b2c2c;
   font-size:13px;
-  white-space:pre-wrap
+  white-space:pre-wrap;
 }
-.task-section{margin-bottom:36px;scroll-margin-top:20px}
+
+.task-section{
+  margin-bottom:40px;
+  scroll-margin-top:20px;
+}
 .task-heading{
   display:flex;
   align-items:center;
-  gap:10px;
-  margin-bottom:12px
+  gap:12px;
+  margin-bottom:13px;
 }
-.task-heading h2{margin:0;font-size:20px}
-.task-line{height:1px;flex:1;background:#dcdce1}
-.task-state{font-size:11px;color:#8a8a93}
+.task-heading h2{
+  margin:0;
+  font-size:18px;
+  letter-spacing:-.015em;
+}
+.task-line{height:1px;flex:1;background:var(--line-strong)}
+.task-state{display:none}
+
 .result-grid{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:16px
+  gap:16px;
 }
 .card{
   min-width:0;
-  background:#fff;
-  border:1px solid #e4e4e7;
-  border-radius:16px;
-  overflow:hidden
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:var(--shadow-soft);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.card:hover{
+  transform:translateY(-2px);
+  border-color:#d8dde7;
+  box-shadow:0 12px 28px rgba(16,24,40,.08);
 }
 .card-title{
-  height:58px;
-  padding:0 18px;
+  min-height:62px;
+  padding:11px 17px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  border-bottom:1px solid #e4e4e7
+  gap:12px;
+  border-bottom:1px solid var(--line);
 }
-.card-title strong{font-size:16px}
-.format{font-size:12px;color:#71717a}
+.card-title-copy{min-width:0}
+.card-title strong{
+  display:block;
+  font-size:15px;
+  letter-spacing:-.01em;
+}
+.card-title small{
+  display:block;
+  margin-top:2px;
+  color:var(--subtle);
+  font-size:10.5px;
+  font-weight:500;
+  line-height:1.25;
+}
+.format{
+  flex:0 0 auto;
+  padding:4px 7px;
+  border-radius:7px;
+  background:var(--surface-soft);
+  border:1px solid var(--line);
+  color:#667085;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.03em;
+}
+
 .viewer,.video-wrap{
   position:relative;
   width:100%;
   aspect-ratio:1/1;
-  overflow:hidden
+  overflow:hidden;
 }
 .viewer{
-  background:radial-gradient(circle at center,#fff 0%,#f1f1f3 75%,#e8e8eb 100%)
+  background:radial-gradient(circle at center,#fff 0%,#f3f4f6 76%,#e7e9ee 100%);
 }
 .video-wrap{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#000
+  background:#0b0b0d;
 }
 .viewer canvas{display:block;width:100%;height:100%}
 video{
@@ -87,7 +312,7 @@ video{
   width:100%;
   height:100%;
   object-fit:contain;
-  background:#000
+  background:#0b0b0d;
 }
 video:not([src]){visibility:hidden}
 .placeholder,.loading{
@@ -98,47 +323,79 @@ video:not([src]){visibility:hidden}
   justify-content:center;
   padding:20px;
   text-align:center;
-  font-size:13px
+  font-size:12px;
 }
-.placeholder{
-  color:#8a8a93;
-  pointer-events:none;
-}
-.video-placeholder{
-  color:#a1a1aa;
-  z-index:1;
-  pointer-events:none;
-}
+.placeholder{color:#98a2b3;pointer-events:none}
+.video-placeholder{color:#a6a6ad;z-index:1;pointer-events:none}
 .loading{
   z-index:5;
   pointer-events:none;
-  color:#71717a;
-  background:rgba(245,245,247,.48);
-  backdrop-filter:blur(2px)
+  color:#667085;
+  background:rgba(248,250,252,.58);
+  backdrop-filter:blur(3px);
 }
 .hidden{display:none!important}
+
 .card-bottom{
-  min-height:48px;
+  min-height:74px;
   display:flex;
-  align-items:center;
+  flex-direction:column;
+  align-items:flex-start;
   justify-content:center;
-  padding:8px 12px;
-  border-top:1px solid #e4e4e7;
-  color:#71717a;
-  font-size:12px;
-  text-align:center
+  gap:4px;
+  padding:10px 14px 11px;
+  border-top:1px solid var(--line);
+  color:#475467;
+  text-align:left;
 }
-.sync{display:flex;align-items:center;gap:7px}
+.card-bottom .description{
+  font-size:11.5px;
+  font-weight:600;
+  line-height:1.35;
+}
+.card-bottom .hint{
+  color:#98a2b3;
+  font-size:10.5px;
+  line-height:1.35;
+}
+.sync{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
 .sync-dot{
-  width:7px;height:7px;border-radius:50%;background:#22c55e
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--success);
+  box-shadow:0 0 0 3px rgba(23,166,115,.10);
 }
+
+.footer-note{
+  margin-top:8px;
+  padding-top:22px;
+  border-top:1px solid var(--line-strong);
+  color:#98a2b3;
+  font-size:11px;
+  text-align:center;
+}
+
 @media(max-width:1300px){
   .result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .overview{grid-template-columns:1fr}
 }
 @media(max-width:760px){
+  .page{width:min(100% - 24px,1600px);padding:18px 0 44px}
+  .hero{padding:32px 24px;border-radius:18px}
+  .hero h1{font-size:42px}
+  .hero .subtitle{font-size:20px}
+  .overview{gap:12px;margin-bottom:28px}
+  .info-card{padding:20px}
+  .results-header{align-items:flex-start;flex-direction:column;gap:8px}
   .result-grid{grid-template-columns:1fr}
   .viewer,.video-wrap{aspect-ratio:16/10}
   .task-section{margin-bottom:44px}
+  .card-bottom{min-height:68px}
 }
 </style>
 
@@ -154,14 +411,82 @@ video:not([src]){visibility:hidden}
 
 <body>
 <div class="page">
-  <header class="header">
-    <h1>Experiment Results</h1>
-    <p>Original Mesh · Reference Video · Manual · AnimBridge</p>
-    <div id="summary" class="summary">Loading tasks...</div>
+  <header class="hero">
+    <div class="eyebrow">Interactive Supplementary Material</div>
+    <h1>AnimBridge</h1>
+    <p class="subtitle">Bridging AI-Generated Motion and 3D Character Animation Workflows</p>
+    <p class="lead">
+      AnimBridge is an AI-assisted skeletal animation authoring system integrated into Blender.
+      This page provides interactive animation results from the user study, allowing direct visual
+      comparison between manual animation authoring in Blender and the final animations produced
+      with AnimBridge.
+    </p>
+    <div class="hero-meta">
+      <span>16 study tasks</span>
+      <span>64-frame reference videos</span>
+      <span>Interactive 3D comparison</span>
+    </div>
   </header>
+
+  <section class="overview" aria-label="About the interactive results">
+    <div class="info-card">
+      <div class="results-kicker">User Study</div>
+      <h2>What is shown on this page?</h2>
+      <p>
+        Each task provides a rigged target 3D character and a 64-frame reference video.
+        The viewer presents the resulting animations from the two authoring conditions directly
+        operated by participants: <strong>Blender-Manual</strong>, using Blender's native animation
+        tools, and <strong>AnimBridge</strong>, using our AI-assisted workflow.
+      </p>
+      <div class="scope-note">
+        <strong>Scope.</strong> The fully automatic <strong>AnimBridge-Auto</strong> condition used in
+        the paper's Task Outcome Quality analysis is reported in the paper and is not included in
+        this interactive viewer.
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h3>How to explore</h3>
+      <div class="guide-list">
+        <div class="guide-item">
+          <div class="guide-num">1</div>
+          <div>
+            <strong>Play or scrub the reference video</strong>
+            <span>The Blender-Manual and AnimBridge animations stay synchronized with it.</span>
+          </div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-num">2</div>
+          <div>
+            <strong>Rotate the 3D views</strong>
+            <span>Drag inside a 3D panel to inspect the motion from different viewpoints.</span>
+          </div>
+        </div>
+        <div class="guide-item">
+          <div class="guide-num">3</div>
+          <div>
+            <strong>Zoom for closer inspection</strong>
+            <span>Use the mouse wheel or trackpad to zoom in and out.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="results-header">
+    <div>
+      <div class="results-kicker">Interactive Viewer</div>
+      <h2>Animation Results</h2>
+    </div>
+    <div id="summary" class="summary">Loading tasks...</div>
+  </div>
 
   <div id="errorBox"></div>
   <main id="tasksContainer"></main>
+
+  <div class="footer-note">
+    Models are loaded on demand as you scroll to keep the page responsive.
+  </div>
 </div>
 
 <script type="module">
@@ -901,7 +1226,7 @@ class TaskController{
 
       this.state.textContent="Load failed";
       showError(
-        `Task 加载失败：${this.task.label || this.task.id}\n${String(error)}`
+        `Failed to load ${this.task.label || this.task.id}\n${String(error)}`
       );
     }
   }
@@ -951,7 +1276,8 @@ function esc(v){
 }
 
 function createTaskSection(task){
-  const label=task.label || task.id;
+  const rawLabel=task.label || task.id;
+  const label=String(rawLabel).replace(/^task(\d+)$/i,(_,n)=>`Task ${n.padStart(2,"0")}`);
   const section=document.createElement("section");
 
   section.className="task-section";
@@ -968,7 +1294,10 @@ function createTaskSection(task){
 
       <div class="card">
         <div class="card-title">
-          <strong>Original Mesh</strong>
+          <div class="card-title-copy">
+            <strong>Target Character</strong>
+            <small>Rigged 3D asset</small>
+          </div>
           <span class="format">FBX</span>
         </div>
 
@@ -980,13 +1309,17 @@ function createTaskSection(task){
         </div>
 
         <div class="card-bottom">
-          Drag to rotate · Scroll to zoom
+          <div class="description">Rigged target character provided for this task</div>
+          <div class="hint">Drag to rotate · Scroll to zoom</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title">
-          <strong>Reference Video</strong>
+          <div class="card-title-copy">
+            <strong>Reference Video</strong>
+            <small>Motion target</small>
+          </div>
           <span class="format">MP4</span>
         </div>
 
@@ -1003,14 +1336,18 @@ function createTaskSection(task){
         </div>
 
         <div class="card-bottom">
-          Video controls this Task's Manual and AnimBridge animations
+          <div class="description">64-frame reference motion to be reproduced</div>
+          <div class="hint">Play or scrub to synchronize both animation results</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title">
-          <strong>Manual</strong>
-          <span class="format">Animated FBX</span>
+          <div class="card-title-copy">
+            <strong>Blender-Manual</strong>
+            <small>Manual authoring condition</small>
+          </div>
+          <span class="format">FBX</span>
         </div>
 
         <div class="viewer manual-viewer">
@@ -1021,17 +1358,21 @@ function createTaskSection(task){
         </div>
 
         <div class="card-bottom">
-          <div class="sync">
-            <div class="sync-dot"></div>
-            Synced with reference video
+          <div class="description">Animation authored using Blender's native animation tools</div>
+          <div class="hint">
+            <span class="sync"><span class="sync-dot"></span>Synced with reference video</span>
+            · Drag to rotate · Scroll to zoom
           </div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title">
-          <strong>AnimBridge</strong>
-          <span class="format">Animated FBX</span>
+          <div class="card-title-copy">
+            <strong>AnimBridge</strong>
+            <small>AI-assisted authoring condition</small>
+          </div>
+          <span class="format">FBX</span>
         </div>
 
         <div class="viewer animbridge-viewer">
@@ -1042,9 +1383,10 @@ function createTaskSection(task){
         </div>
 
         <div class="card-bottom">
-          <div class="sync">
-            <div class="sync-dot"></div>
-            Synced with reference video
+          <div class="description">Final animation produced by a participant using AnimBridge</div>
+          <div class="hint">
+            <span class="sync"><span class="sync-dot"></span>Synced with reference video</span>
+            · Drag to rotate · Scroll to zoom
           </div>
         </div>
       </div>
@@ -1092,7 +1434,7 @@ async function readTasks(){
 
   if(!response.ok){
     throw new Error(
-      `无法读取 ./tasks.json：HTTP ${response.status}`
+      `Unable to read ./tasks.json: HTTP ${response.status}`
     );
   }
 
@@ -1100,10 +1442,10 @@ async function readTasks(){
   const tasks=data.tasks;
 
   if(!Array.isArray(tasks) || tasks.length===0){
-    throw new Error("tasks.json 中没有 task");
+    throw new Error("No tasks were found in tasks.json.");
   }
 
-  summary.textContent=`${tasks.length} Tasks`;
+  summary.textContent=`${tasks.length} study tasks · 64-frame reference videos`;
 
   for(const task of tasks){
     const section=createTaskSection(task);
@@ -1131,9 +1473,9 @@ readTasks().catch(error=>{
   summary.textContent="Failed to load tasks";
 
   showError(
-    "网页初始化失败。\n\n" +
-    "请确认 tasks.json 和 index.html 在同一目录，" +
-    "并通过 HTTP Server 打开网页。\n\n" +
+    "The page could not be initialized.\n\n" +
+    "Please confirm that tasks.json and index.html are in the same directory " +
+    "and that the page is being served over HTTP.\n\n" +
     String(error)
   );
 });
