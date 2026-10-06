@@ -1,0 +1,1142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Experiment Results</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#f5f5f7;
+  color:#18181b;
+  font-family:Arial,Helvetica,"Microsoft YaHei",sans-serif
+}
+.page{
+  width:min(1600px,calc(100% - 40px));
+  margin:0 auto;
+  padding:30px 0 60px
+}
+.header{margin-bottom:28px}
+.header h1{margin:0;font-size:32px}
+.header p{margin:8px 0 0;color:#71717a;font-size:14px}
+.summary{margin-top:8px;color:#8a8a93;font-size:13px}
+#errorBox{
+  display:none;
+  margin-bottom:22px;
+  padding:14px;
+  background:#fef2f2;
+  border:1px solid #fecaca;
+  border-radius:10px;
+  color:#991b1b;
+  font-size:13px;
+  white-space:pre-wrap
+}
+.task-section{margin-bottom:36px;scroll-margin-top:20px}
+.task-heading{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px
+}
+.task-heading h2{margin:0;font-size:20px}
+.task-line{height:1px;flex:1;background:#dcdce1}
+.task-state{font-size:11px;color:#8a8a93}
+.result-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px
+}
+.card{
+  min-width:0;
+  background:#fff;
+  border:1px solid #e4e4e7;
+  border-radius:16px;
+  overflow:hidden
+}
+.card-title{
+  height:58px;
+  padding:0 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #e4e4e7
+}
+.card-title strong{font-size:16px}
+.format{font-size:12px;color:#71717a}
+.viewer,.video-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  overflow:hidden
+}
+.viewer{
+  background:radial-gradient(circle at center,#fff 0%,#f1f1f3 75%,#e8e8eb 100%)
+}
+.video-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000
+}
+.viewer canvas{display:block;width:100%;height:100%}
+video{
+  position:relative;
+  z-index:2;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000
+}
+video:not([src]){visibility:hidden}
+.placeholder,.loading{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  text-align:center;
+  font-size:13px
+}
+.placeholder{
+  color:#8a8a93;
+  pointer-events:none;
+}
+.video-placeholder{
+  color:#a1a1aa;
+  z-index:1;
+  pointer-events:none;
+}
+.loading{
+  z-index:5;
+  pointer-events:none;
+  color:#71717a;
+  background:rgba(245,245,247,.48);
+  backdrop-filter:blur(2px)
+}
+.hidden{display:none!important}
+.card-bottom{
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 12px;
+  border-top:1px solid #e4e4e7;
+  color:#71717a;
+  font-size:12px;
+  text-align:center
+}
+.sync{display:flex;align-items:center;gap:7px}
+.sync-dot{
+  width:7px;height:7px;border-radius:50%;background:#22c55e
+}
+@media(max-width:1300px){
+  .result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .result-grid{grid-template-columns:1fr}
+  .viewer,.video-wrap{aspect-ratio:16/10}
+  .task-section{margin-bottom:44px}
+}
+</style>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+
+<body>
+<div class="page">
+  <header class="header">
+    <h1>Experiment Results</h1>
+    <p>Original Mesh · Reference Video · Manual · AnimBridge</p>
+    <div id="summary" class="summary">Loading tasks...</div>
+  </header>
+
+  <div id="errorBox"></div>
+  <main id="tasksContainer"></main>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import {FBXLoader} from "three/addons/loaders/FBXLoader.js";
+import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+
+const tasksContainer=document.getElementById("tasksContainer");
+const errorBox=document.getElementById("errorBox");
+const summary=document.getElementById("summary");
+
+const MATERIAL_ROUGHNESS=.72;
+const MATERIAL_METALNESS=0.0;
+
+/* ============================================================
+   Reference Video / FBX 统一逻辑时间轴
+   ------------------------------------------------------------
+   所有动画统一按 64 个逻辑帧显示。
+
+   - FBX 自己的第一帧 -> 逻辑 Frame 1
+   - FBX 自己的最后有效帧如果早于逻辑 Frame 64
+     -> 后续一直保持最后姿势
+   - 不再把短 FBX 拉伸到整段视频
+   - 即使导出的 FBX 实际是 2~65，也会把 2 当作逻辑 Frame 1
+============================================================ */
+const TARGET_FRAME_COUNT=64;
+
+/* ============================================================
+   左右 FBX 统一材质
+============================================================ */
+function makeUniformMaterial(oldMaterial){
+  const map=oldMaterial?.map ?? null;
+  const normalMap=oldMaterial?.normalMap ?? null;
+
+  if(map){
+    map.colorSpace=THREE.SRGBColorSpace;
+    map.needsUpdate=true;
+  }
+
+  const color=new THREE.Color(0xffffff);
+  if(!map && oldMaterial?.color) color.copy(oldMaterial.color);
+
+  const m=new THREE.MeshStandardMaterial({
+    color,
+    map,
+    normalMap,
+    metalness:MATERIAL_METALNESS,
+    roughness:MATERIAL_ROUGHNESS,
+    side:THREE.DoubleSide,
+    transparent:false,
+    opacity:1,
+    alphaMap:null,
+    alphaTest:0,
+    depthWrite:true,
+    depthTest:true,
+    vertexColors:oldMaterial?.vertexColors===true
+  });
+
+  m.needsUpdate=true;
+  return m;
+}
+
+/* ============================================================
+   所有当前活跃 Viewer 共用一个 RAF
+============================================================ */
+const activeViewers=new Set();
+
+function renderLoop(){
+  for(const viewer of activeViewers) viewer.render();
+  requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
+
+/* ============================================================
+   FBX Viewer
+============================================================ */
+class FBXViewer{
+  constructor(container,loading,animated=false){
+    this.container=container;
+    this.loading=loading;
+    this.animated=animated;
+
+    this.loader=new FBXLoader();
+
+    this.scene=null;
+    this.camera=null;
+    this.renderer=null;
+    this.controls=null;
+    this.grid=null;
+
+    this.model=null;
+    this.mixer=null;
+    this.clip=null;
+    this.action=null;
+
+    /* FBX 中真正动画 Key 的时间范围（秒） */
+    this.clipStart=0;
+    this.clipEnd=0;
+
+    this.abortController=null;
+    this.generation=0;
+    this.resizeObserver=null;
+    this.initialized=false;
+  }
+
+  initialize(){
+    if(this.initialized) return;
+
+    this.scene=new THREE.Scene();
+
+    this.camera=new THREE.PerspectiveCamera(35,1,.001,100000);
+    this.camera.position.set(2,1.5,2);
+
+    this.renderer=new THREE.WebGLRenderer({
+      antialias:true,
+      alpha:true
+    });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    this.renderer.outputColorSpace=THREE.SRGBColorSpace;
+    this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure=1;
+
+    this.container.appendChild(this.renderer.domElement);
+
+    this.controls=new OrbitControls(
+      this.camera,
+      this.renderer.domElement
+    );
+    this.controls.enableDamping=true;
+    this.controls.dampingFactor=.08;
+
+    this.scene.add(
+      new THREE.HemisphereLight(0xffffff,0x666666,1.8)
+    );
+
+    const main=new THREE.DirectionalLight(0xffffff,2.0);
+    main.position.set(3,5,4);
+    this.scene.add(main);
+
+    const fill=new THREE.DirectionalLight(0xffffff,.8);
+    fill.position.set(-4,2,-3);
+    this.scene.add(fill);
+
+    const front=new THREE.DirectionalLight(0xffffff,.45);
+    front.position.set(0,2,5);
+    this.scene.add(front);
+
+    this.grid=new THREE.GridHelper(
+      10,20,0xb8bcc4,0xd8dbe0
+    );
+    this.grid.material.opacity=.30;
+    this.grid.material.transparent=true;
+    this.scene.add(this.grid);
+
+    this.resizeObserver=new ResizeObserver(()=>this.resize());
+    this.resizeObserver.observe(this.container);
+
+    this.initialized=true;
+    this.resize();
+    activeViewers.add(this);
+  }
+
+  cancelPending(){
+    if(this.abortController){
+      this.abortController.abort();
+      this.abortController=null;
+    }
+    this.generation++;
+  }
+
+  disposeTexture(tex,set){
+    if(!tex || !tex.isTexture || set.has(tex)) return;
+    set.add(tex);
+    tex.dispose();
+  }
+
+  clearModel(){
+    if(!this.model){
+      this.mixer=null;
+      this.clip=null;
+      this.action=null;
+      this.clipStart=0;
+      this.clipEnd=0;
+      return;
+    }
+
+    this.scene?.remove(this.model);
+    const textures=new Set();
+
+    this.model.traverse(o=>{
+      o.geometry?.dispose?.();
+
+      if(o.material){
+        const mats=Array.isArray(o.material)
+          ? o.material
+          : [o.material];
+
+        for(const m of mats){
+          this.disposeTexture(m.map,textures);
+          this.disposeTexture(m.normalMap,textures);
+          this.disposeTexture(m.alphaMap,textures);
+          this.disposeTexture(m.emissiveMap,textures);
+          this.disposeTexture(m.roughnessMap,textures);
+          this.disposeTexture(m.metalnessMap,textures);
+          m.dispose?.();
+        }
+      }
+    });
+
+    this.model=null;
+    this.mixer=null;
+    this.clip=null;
+    this.action=null;
+    this.clipStart=0;
+    this.clipEnd=0;
+  }
+
+  destroy(){
+    this.cancelPending();
+    this.clearModel();
+
+    if(!this.initialized) return;
+
+    activeViewers.delete(this);
+
+    this.resizeObserver?.disconnect();
+    this.resizeObserver=null;
+
+    this.controls?.dispose();
+    this.controls=null;
+
+    if(this.grid){
+      this.grid.geometry?.dispose?.();
+      this.grid.material?.dispose?.();
+      this.grid=null;
+    }
+
+    if(this.renderer){
+      const canvas=this.renderer.domElement;
+      this.renderer.dispose();
+      this.renderer.forceContextLoss?.();
+      canvas?.remove();
+      this.renderer=null;
+    }
+
+    this.scene=null;
+    this.camera=null;
+    this.initialized=false;
+  }
+
+  standardizeMaterials(object){
+    object.traverse(child=>{
+      if(!child.isMesh && !child.isSkinnedMesh) return;
+      if(!child.material) return;
+
+      const oldMats=Array.isArray(child.material)
+        ? child.material
+        : [child.material];
+
+      const newMats=oldMats.map(makeUniformMaterial);
+
+      child.material=Array.isArray(child.material)
+        ? newMats
+        : newMats[0];
+
+      /* 旧 material 不再需要；texture 仍被新 material 使用 */
+      for(const m of oldMats) m?.dispose?.();
+    });
+  }
+
+  resourceBase(url){
+    const i=url.lastIndexOf("/");
+    return i>=0 ? url.slice(0,i+1) : "./";
+  }
+
+  /*
+   * 读取 AnimationClip 中真正的动画时间范围。
+   *
+   * 为什么不能只相信 clip.duration：
+   * 某些 FBX 导出后第一帧可能不是从 0 秒开始，
+   * 例如 Blender 中的 2~65 帧可能在 FBX 中保留了起始偏移。
+   *
+   * 这里把“FBX 自己的第一帧”统一当作逻辑 Frame 1。
+   */
+  getClipTimeRange(clip){
+    let start=Infinity;
+    let end=-Infinity;
+
+    for(const track of clip.tracks){
+      const times=track?.times;
+
+      /*
+       * 单 Key 轨道只是常量，不适合作为动画起止范围依据。
+       * 优先使用至少有两个采样点的轨道。
+       */
+      if(!times || times.length<2) continue;
+
+      const first=Number(times[0]);
+      const last=Number(times[times.length-1]);
+
+      if(Number.isFinite(first)){
+        start=Math.min(start,first);
+      }
+
+      if(Number.isFinite(last)){
+        end=Math.max(end,last);
+      }
+    }
+
+    /*
+     * 极端 fallback：
+     * 如果没有找到正常动画轨道，就退回 0~clip.duration。
+     */
+    if(!Number.isFinite(start) || !Number.isFinite(end)){
+      start=0;
+      end=Number.isFinite(clip.duration)
+        ? Math.max(0,clip.duration)
+        : 0;
+    }
+
+    if(end<start){
+      end=start;
+    }
+
+    return {start,end};
+  }
+
+  async loadFBX(url){
+    this.initialize();
+    this.cancelPending();
+    this.clearModel();
+
+    const generation=this.generation;
+    const controller=new AbortController();
+    this.abortController=controller;
+
+    this.loading.classList.remove("hidden");
+    this.loading.textContent="Loading FBX...";
+
+    try{
+      const response=await fetch(url,{
+        signal:controller.signal,
+        cache:"no-cache"
+      });
+
+      if(!response.ok){
+        throw new Error(`HTTP ${response.status}: ${url}`);
+      }
+
+      const total=Number(
+        response.headers.get("content-length") || 0
+      );
+
+      let buffer;
+
+      if(response.body && total>0){
+        const reader=response.body.getReader();
+        const chunks=[];
+        let received=0;
+
+        while(true){
+          const {done,value}=await reader.read();
+          if(done) break;
+
+          chunks.push(value);
+          received+=value.byteLength;
+
+          this.loading.textContent=
+            `Loading FBX... ${Math.round(received/total*100)}%`;
+        }
+
+        const merged=new Uint8Array(received);
+        let offset=0;
+
+        for(const chunk of chunks){
+          merged.set(chunk,offset);
+          offset+=chunk.byteLength;
+        }
+
+        buffer=merged.buffer;
+      }else{
+        buffer=await response.arrayBuffer();
+      }
+
+      if(generation!==this.generation) return null;
+
+      this.loading.textContent="Parsing FBX...";
+
+      const object=this.loader.parse(
+        buffer,
+        this.resourceBase(url)
+      );
+
+      if(generation!==this.generation) return null;
+
+      this.model=object;
+      this.standardizeMaterials(object);
+      this.scene.add(object);
+      this.fitCamera(object);
+
+      if(
+        this.animated &&
+        object.animations?.length>0
+      ){
+        this.clip=object.animations[0];
+
+        const range=this.getClipTimeRange(this.clip);
+        this.clipStart=range.start;
+        this.clipEnd=range.end;
+
+        console.log(
+          `[FBX] ${url}`,
+          `clip.duration=${this.clip.duration.toFixed(4)}s`,
+          `range=${this.clipStart.toFixed(4)}~${this.clipEnd.toFixed(4)}s`,
+          `available=${(this.clipEnd-this.clipStart).toFixed(4)}s`
+        );
+
+        this.mixer=new THREE.AnimationMixer(object);
+        this.action=this.mixer.clipAction(this.clip);
+
+        /*
+         * 用 LoopOnce，避免刚好定位到动画结尾时又跳回第一帧。
+         * syncWithVideo() 每次定位前都会重新启用 action，
+         * 因此向前/向后拖动视频都能正确更新。
+         */
+        this.action.setLoop(THREE.LoopOnce,1);
+        this.action.clampWhenFinished=true;
+        this.action.play();
+
+        this.setAnimationTime(this.clipStart);
+      }
+
+      this.loading.classList.add("hidden");
+      return object;
+
+    }catch(error){
+      if(error?.name==="AbortError") return null;
+
+      console.error(error);
+      this.loading.textContent="FBX Load Failed";
+      throw error;
+
+    }finally{
+      if(this.abortController===controller){
+        this.abortController=null;
+      }
+    }
+  }
+
+  fitCamera(object){
+    object.updateMatrixWorld(true);
+
+    const box=new THREE.Box3().setFromObject(object);
+    if(box.isEmpty()) return;
+
+    const size=new THREE.Vector3();
+    const center=new THREE.Vector3();
+
+    box.getSize(size);
+    box.getCenter(center);
+
+    const maxSize=Math.max(size.x,size.y,size.z);
+    const fov=THREE.MathUtils.degToRad(this.camera.fov);
+
+    let distance=maxSize/(2*Math.tan(fov/2));
+    distance*=1.6;
+
+    const direction=new THREE.Vector3(1,.55,1).normalize();
+
+    this.camera.position.copy(
+      center.clone().add(
+        direction.multiplyScalar(distance)
+      )
+    );
+
+    this.camera.near=Math.max(distance/1000,.001);
+    this.camera.far=Math.max(distance*100,100);
+    this.camera.updateProjectionMatrix();
+
+    this.controls.target.copy(center);
+    this.controls.update();
+
+    if(this.grid) this.grid.position.y=box.min.y;
+  }
+
+  /*
+   * 把动画直接定位到指定的 clip 时间。
+   *
+   * 不让 AnimationMixer 自己自由播放，
+   * 动画时间完全由 Reference Video 决定。
+   */
+  setAnimationTime(time){
+    if(!this.mixer || !this.action || !this.clip) return;
+
+    const safeTime=THREE.MathUtils.clamp(
+      time,
+      this.clipStart,
+      this.clipEnd
+    );
+
+    /*
+     * action 在到达 LoopOnce 结尾后可能进入 paused 状态。
+     * 每次同步时重新启用，保证用户往回拖视频仍然能更新。
+     */
+    this.action.enabled=true;
+    this.action.paused=false;
+    this.action.time=safeTime;
+
+    /*
+     * delta=0：
+     * 不推进动画，只把当前 action.time 的姿势应用到模型。
+     */
+    this.mixer.update(0);
+  }
+
+  syncWithVideo(video){
+    if(!this.mixer || !this.clip || !this.action) return;
+    if(!Number.isFinite(video.duration) || video.duration<=0) return;
+
+    /*
+     * Reference Video 永远对应 64 个逻辑帧。
+     *
+     * 如果视频由 64 张画面组成：
+     *
+     *   Frame 1  从 t=0 开始
+     *   Frame 2  从 t=1*frameDuration 开始
+     *   ...
+     *   Frame 64 从 t=63*frameDuration 开始
+     *
+     * 最后一张画面持续到 video.duration。
+     */
+    const frameDuration=
+      video.duration / TARGET_FRAME_COUNT;
+
+    if(!Number.isFinite(frameDuration) || frameDuration<=0) return;
+
+    /*
+     * 0 -> 逻辑 Frame 1
+     * 1 -> 逻辑 Frame 2
+     * ...
+     * 63 -> 逻辑 Frame 64
+     */
+    const logicalFramePosition=
+      THREE.MathUtils.clamp(
+        video.currentTime / frameDuration,
+        0,
+        TARGET_FRAME_COUNT-1
+      );
+
+    /*
+     * FBX 从自己的第一帧开始正常前进。
+     *
+     * 例如导出结果实际是 Blender 2~65：
+     *   FBX 自己的第一帧(2) -> 逻辑 Frame 1
+     *   FBX 自己的最后帧(65) -> 逻辑 Frame 64
+     *
+     * 因此前端不关心它绝对是从 1 还是 2 开始。
+     */
+    const wantedOffset=
+      logicalFramePosition * frameDuration;
+
+    const availableDuration=Math.max(
+      0,
+      this.clipEnd-this.clipStart
+    );
+
+    /*
+     * 不足 64 帧时，不拉伸。
+     * 超过 FBX 实际结尾后，永远保持最后一帧。
+     *
+     * 视觉上等价于：
+     *   1 ... 40 40 40 40 ... 40
+     *             ↑ 补到逻辑 Frame 64
+     */
+    const actualOffset=Math.min(
+      wantedOffset,
+      availableDuration
+    );
+
+    const sourceTime=
+      this.clipStart + actualOffset;
+
+    this.setAnimationTime(sourceTime);
+  }
+
+  resize(){
+    if(!this.initialized) return;
+
+    const w=this.container.clientWidth;
+    const h=this.container.clientHeight;
+
+    if(w<=0 || h<=0) return;
+
+    this.camera.aspect=w/h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w,h,false);
+  }
+
+  render(){
+    if(!this.initialized) return;
+    this.controls?.update();
+    this.renderer.render(this.scene,this.camera);
+  }
+}
+
+/* ============================================================
+   一个 Task 对应一整行
+============================================================ */
+const taskControllers=[];
+
+class TaskController{
+  constructor(task,section){
+    this.task=task;
+    this.section=section;
+
+    this.state=section.querySelector(".task-state");
+
+    this.originalLoading=
+      section.querySelector(".original-loading");
+
+    this.originalPlaceholder=
+      section.querySelector(".original-viewer .placeholder");
+
+    this.manualLoading=
+      section.querySelector(".manual-loading");
+
+    this.manualPlaceholder=
+      section.querySelector(".manual-viewer .placeholder");
+
+    this.animBridgeLoading=
+      section.querySelector(".animbridge-loading");
+
+    this.animBridgePlaceholder=
+      section.querySelector(".animbridge-viewer .placeholder");
+
+    this.video=
+      section.querySelector("video");
+
+    this.videoPlaceholder=
+      section.querySelector(".video-placeholder");
+
+    this.originalViewer=new FBXViewer(
+      section.querySelector(".original-viewer"),
+      this.originalLoading,
+      false
+    );
+
+    this.manualViewer=new FBXViewer(
+      section.querySelector(".manual-viewer"),
+      this.manualLoading,
+      true
+    );
+
+    this.animBridgeViewer=new FBXViewer(
+      section.querySelector(".animbridge-viewer"),
+      this.animBridgeLoading,
+      true
+    );
+
+    this.active=false;
+    this.generation=0;
+
+    this.bindVideo();
+  }
+
+  bindVideo(){
+    const sync=()=>{
+      this.manualViewer.syncWithVideo(this.video);
+      this.animBridgeViewer.syncWithVideo(this.video);
+    };
+
+    for(const event of [
+      "timeupdate",
+      "seeking",
+      "seeked",
+      "loadedmetadata",
+      "pause",
+      "ended"
+    ]){
+      this.video.addEventListener(event,sync);
+    }
+
+    this.video.addEventListener("play",()=>{
+      /* 同一时间只让一个参考视频播放 */
+      for(const c of taskControllers){
+        if(c!==this) c.video.pause();
+      }
+    });
+
+    const loop=()=>{
+      if(
+        this.active &&
+        !this.video.paused &&
+        !this.video.ended
+      ){
+        sync();
+      }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  async activate(){
+    if(this.active) return;
+
+    this.active=true;
+    const generation=++this.generation;
+
+    this.state.textContent="Loading";
+
+    this.video.src=this.task.referenceVideo;
+    this.video.preload="metadata";
+    this.video.load();
+    this.videoPlaceholder.classList.add("hidden");
+
+    try{
+      /* 当前 Task 三个 FBX 并行加载 */
+      await Promise.all([
+        this.originalViewer.loadFBX(this.task.originalFbx),
+        this.manualViewer.loadFBX(this.task.manualFbx),
+        this.animBridgeViewer.loadFBX(this.task.animBridgeFbx)
+      ]);
+
+      if(!this.active || generation!==this.generation) return;
+
+      this.state.textContent="Ready";
+
+      this.originalPlaceholder?.classList.add("hidden");
+      this.manualPlaceholder?.classList.add("hidden");
+      this.animBridgePlaceholder?.classList.add("hidden");
+
+      this.manualViewer.syncWithVideo(this.video);
+      this.animBridgeViewer.syncWithVideo(this.video);
+
+    }catch(error){
+      if(!this.active || generation!==this.generation) return;
+
+      this.state.textContent="Load failed";
+      showError(
+        `Task 加载失败：${this.task.label || this.task.id}\n${String(error)}`
+      );
+    }
+  }
+
+  deactivate(){
+    if(!this.active) return;
+
+    this.active=false;
+    this.generation++;
+    this.state.textContent="Lazy";
+
+    try{ this.video.pause(); }catch{}
+
+    this.video.removeAttribute("src");
+    this.video.load();
+    this.videoPlaceholder.classList.remove("hidden");
+
+    /* 释放 GPU / JS 大对象 */
+    this.originalViewer.destroy();
+    this.manualViewer.destroy();
+    this.animBridgeViewer.destroy();
+
+    this.originalPlaceholder?.classList.remove("hidden");
+    this.manualPlaceholder?.classList.remove("hidden");
+    this.animBridgePlaceholder?.classList.remove("hidden");
+
+    this.originalLoading.classList.remove("hidden");
+    this.manualLoading.classList.remove("hidden");
+    this.animBridgeLoading.classList.remove("hidden");
+
+    this.originalLoading.textContent="Waiting to load...";
+    this.manualLoading.textContent="Waiting to load...";
+    this.animBridgeLoading.textContent="Waiting to load...";
+  }
+}
+
+/* ============================================================
+   动态创建每一行
+============================================================ */
+function esc(v){
+  return String(v)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function createTaskSection(task){
+  const label=task.label || task.id;
+  const section=document.createElement("section");
+
+  section.className="task-section";
+  section.id=task.id;
+
+  section.innerHTML=`
+    <div class="task-heading">
+      <h2>${esc(label)}</h2>
+      <div class="task-line"></div>
+      <span class="task-state">Lazy</span>
+    </div>
+
+    <div class="result-grid">
+
+      <div class="card">
+        <div class="card-title">
+          <strong>Original Mesh</strong>
+          <span class="format">FBX</span>
+        </div>
+
+        <div class="viewer original-viewer">
+          <div class="placeholder">${esc(label)}</div>
+          <div class="loading original-loading">
+            Waiting to load...
+          </div>
+        </div>
+
+        <div class="card-bottom">
+          Drag to rotate · Scroll to zoom
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <strong>Reference Video</strong>
+          <span class="format">MP4</span>
+        </div>
+
+        <div class="video-wrap">
+          <div class="placeholder video-placeholder">
+            Waiting to load...
+          </div>
+
+          <video
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+        </div>
+
+        <div class="card-bottom">
+          Video controls this Task's Manual and AnimBridge animations
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <strong>Manual</strong>
+          <span class="format">Animated FBX</span>
+        </div>
+
+        <div class="viewer manual-viewer">
+          <div class="placeholder">${esc(label)}</div>
+          <div class="loading manual-loading">
+            Waiting to load...
+          </div>
+        </div>
+
+        <div class="card-bottom">
+          <div class="sync">
+            <div class="sync-dot"></div>
+            Synced with reference video
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <strong>AnimBridge</strong>
+          <span class="format">Animated FBX</span>
+        </div>
+
+        <div class="viewer animbridge-viewer">
+          <div class="placeholder">${esc(label)}</div>
+          <div class="loading animbridge-loading">
+            Waiting to load...
+          </div>
+        </div>
+
+        <div class="card-bottom">
+          <div class="sync">
+            <div class="sync-dot"></div>
+            Synced with reference video
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  return section;
+}
+
+/* ============================================================
+   Lazy load
+
+   接近视口 700 px 时加载；
+   离开该扩展区域时释放。
+============================================================ */
+const observer=new IntersectionObserver(
+  entries=>{
+    for(const entry of entries){
+      const controller=entry.target.__controller;
+      if(!controller) continue;
+
+      if(entry.isIntersecting){
+        controller.activate();
+      }else{
+        controller.deactivate();
+      }
+    }
+  },
+  {
+    root:null,
+    rootMargin:"700px 0px 700px 0px",
+    threshold:.01
+  }
+);
+
+/* ============================================================
+   tasks.json
+============================================================ */
+async function readTasks(){
+  const response=await fetch(
+    "./tasks.json",
+    {cache:"no-store"}
+  );
+
+  if(!response.ok){
+    throw new Error(
+      `无法读取 ./tasks.json：HTTP ${response.status}`
+    );
+  }
+
+  const data=await response.json();
+  const tasks=data.tasks;
+
+  if(!Array.isArray(tasks) || tasks.length===0){
+    throw new Error("tasks.json 中没有 task");
+  }
+
+  summary.textContent=`${tasks.length} Tasks`;
+
+  for(const task of tasks){
+    const section=createTaskSection(task);
+    tasksContainer.appendChild(section);
+
+    const controller=new TaskController(task,section);
+
+    section.__controller=controller;
+    taskControllers.push(controller);
+
+    observer.observe(section);
+  }
+}
+
+/* ============================================================
+   Error
+============================================================ */
+function showError(text){
+  errorBox.textContent=text;
+  errorBox.style.display="block";
+}
+
+readTasks().catch(error=>{
+  console.error(error);
+  summary.textContent="Failed to load tasks";
+
+  showError(
+    "网页初始化失败。\n\n" +
+    "请确认 tasks.json 和 index.html 在同一目录，" +
+    "并通过 HTTP Server 打开网页。\n\n" +
+    String(error)
+  );
+});
+</script>
+</body>
+</html>
