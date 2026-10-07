@@ -502,17 +502,246 @@ const MATERIAL_ROUGHNESS=.72;
 const MATERIAL_METALNESS=0.0;
 
 /* ============================================================
-   Reference Video / FBX 统一逻辑时间轴
+   64-frame logical synchronization
    ------------------------------------------------------------
-   所有动画统一按 64 个逻辑帧显示。
+   Reference video: exactly 64 logical frames.
 
-   - FBX 自己的第一帧 -> 逻辑 Frame 1
-   - FBX 自己的最后有效帧如果早于逻辑 Frame 64
-     -> 后续一直保持最后姿势
-   - 不再把短 FBX 拉伸到整段视频
-   - 即使导出的 FBX 实际是 2~65，也会把 2 当作逻辑 Frame 1
+   Each animated FBX uses its own measured native timeline:
+   - its first valid frame -> Logical Frame 1
+   - Logical Frame N -> its own Nth native timeline frame
+   - if it ends early, hold the last valid pose
+   - NEVER stretch a short FBX to 64 frames
+
+   Metadata below was measured from the actual FBX files in Blender 5.1.
 ============================================================ */
 const TARGET_FRAME_COUNT=64;
+
+const FBX_TIMELINE_META={
+  "task01": {
+    "manual": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 64,
+      frameCount: 63
+    }
+  },
+  "task02": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    }
+  },
+  "task03": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 45,
+      frameCount: 44
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 42,
+      frameCount: 41
+    }
+  },
+  "task04": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 4,
+      frameEnd: 64,
+      frameCount: 61
+    }
+  },
+  "task05": {
+    "manual": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 29,
+      frameCount: 28
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 27,
+      frameCount: 26
+    }
+  },
+  "task06": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 29,
+      frameCount: 28
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task07": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 51,
+      frameCount: 50
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task08": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 31,
+      frameCount: 30
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task09": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 37,
+      frameCount: 36
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task10": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 3,
+      frameEnd: 63,
+      frameCount: 61
+    }
+  },
+  "task11": {
+    "manual": {
+      fps: 24,
+      frameStart: 3,
+      frameEnd: 65,
+      frameCount: 63
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task12": {
+    "manual": {
+      fps: 24,
+      frameStart: 3,
+      frameEnd: 65,
+      frameCount: 63
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task13": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task14": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    },
+    "animBridge": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 65,
+      frameCount: 64
+    }
+  },
+  "task15": {
+    "manual": {
+      fps: 24,
+      frameStart: 3,
+      frameEnd: 65,
+      frameCount: 63
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  },
+  "task16": {
+    "manual": {
+      fps: 24,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    },
+    "animBridge": {
+      fps: 30,
+      frameStart: 2,
+      frameEnd: 62,
+      frameCount: 61
+    }
+  }
+};
 
 /* ============================================================
    左右 FBX 统一材质
@@ -564,10 +793,11 @@ requestAnimationFrame(renderLoop);
    FBX Viewer
 ============================================================ */
 class FBXViewer{
-  constructor(container,loading,animated=false){
+  constructor(container,loading,animated=false,timelineMeta=null){
     this.container=container;
     this.loading=loading;
     this.animated=animated;
+    this.timelineMeta=timelineMeta;
 
     this.loader=new FBXLoader();
 
@@ -585,6 +815,7 @@ class FBXViewer{
     /* FBX 中真正动画 Key 的时间范围（秒） */
     this.clipStart=0;
     this.clipEnd=0;
+    this.lastLogicalFrame=-1;
 
     this.abortController=null;
     this.generation=0;
@@ -670,6 +901,7 @@ class FBXViewer{
       this.action=null;
       this.clipStart=0;
       this.clipEnd=0;
+      this.lastLogicalFrame=-1;
       return;
     }
 
@@ -702,6 +934,7 @@ class FBXViewer{
     this.action=null;
     this.clipStart=0;
     this.clipEnd=0;
+    this.lastLogicalFrame=-1;
   }
 
   destroy(){
@@ -897,12 +1130,36 @@ class FBXViewer{
         this.clipStart=range.start;
         this.clipEnd=range.end;
 
-        console.log(
-          `[FBX] ${url}`,
-          `clip.duration=${this.clip.duration.toFixed(4)}s`,
-          `range=${this.clipStart.toFixed(4)}~${this.clipEnd.toFixed(4)}s`,
-          `available=${(this.clipEnd-this.clipStart).toFixed(4)}s`
-        );
+        const availableDuration=this.clipEnd-this.clipStart;
+
+        if(this.timelineMeta){
+          const {fps,frameStart,frameEnd,frameCount}=this.timelineMeta;
+          const expectedDuration=(Math.max(1,frameCount)-1)/fps;
+
+          console.log(
+            `[FBX] ${url}`,
+            `native=${fps}fps`,
+            `BlenderFrames=${frameStart}~${frameEnd} (${frameCount} frames)`,
+            `clip=${this.clipStart.toFixed(4)}~${this.clipEnd.toFixed(4)}s`,
+            `clipDuration=${availableDuration.toFixed(4)}s`,
+            `expectedDuration=${expectedDuration.toFixed(4)}s`
+          );
+
+          const tolerance=(1/fps)*0.75;
+          if(Math.abs(availableDuration-expectedDuration)>tolerance){
+            console.warn(
+              `[FBX timeline check] ${url}:`,
+              `Three.js clip duration (${availableDuration.toFixed(4)}s)`,
+              `differs from Blender timeline expectation (${expectedDuration.toFixed(4)}s).`
+            );
+          }
+        }else{
+          console.log(
+            `[FBX] ${url}`,
+            `clip.duration=${this.clip.duration.toFixed(4)}s`,
+            `range=${this.clipStart.toFixed(4)}~${this.clipEnd.toFixed(4)}s`
+          );
+        }
 
         this.mixer=new THREE.AnimationMixer(object);
         this.action=this.mixer.clipAction(this.clip);
@@ -1002,74 +1259,39 @@ class FBXViewer{
     this.mixer.update(0);
   }
 
-  syncWithVideo(video){
+  /*
+   * Synchronize by logical frame index, not by elapsed seconds.
+   * Logical Frame N -> this FBX's own Nth timeline frame.
+   */
+  syncToLogicalFrame(logicalFrameIndex){
     if(!this.mixer || !this.clip || !this.action) return;
-    if(!Number.isFinite(video.duration) || video.duration<=0) return;
+    if(!this.timelineMeta) return;
 
-    /*
-     * Reference Video 永远对应 64 个逻辑帧。
-     *
-     * 如果视频由 64 张画面组成：
-     *
-     *   Frame 1  从 t=0 开始
-     *   Frame 2  从 t=1*frameDuration 开始
-     *   ...
-     *   Frame 64 从 t=63*frameDuration 开始
-     *
-     * 最后一张画面持续到 video.duration。
-     */
-    const frameDuration=
-      video.duration / TARGET_FRAME_COUNT;
+    const {fps,frameCount}=this.timelineMeta;
+    if(!Number.isFinite(fps) || fps<=0) return;
+    if(!Number.isFinite(frameCount) || frameCount<=0) return;
 
-    if(!Number.isFinite(frameDuration) || frameDuration<=0) return;
-
-    /*
-     * 0 -> 逻辑 Frame 1
-     * 1 -> 逻辑 Frame 2
-     * ...
-     * 63 -> 逻辑 Frame 64
-     */
-    const logicalFramePosition=
-      THREE.MathUtils.clamp(
-        video.currentTime / frameDuration,
-        0,
-        TARGET_FRAME_COUNT-1
-      );
-
-    /*
-     * FBX 从自己的第一帧开始正常前进。
-     *
-     * 例如导出结果实际是 Blender 2~65：
-     *   FBX 自己的第一帧(2) -> 逻辑 Frame 1
-     *   FBX 自己的最后帧(65) -> 逻辑 Frame 64
-     *
-     * 因此前端不关心它绝对是从 1 还是 2 开始。
-     */
-    const wantedOffset=
-      logicalFramePosition * frameDuration;
-
-    const availableDuration=Math.max(
+    const logicalIndex=THREE.MathUtils.clamp(
+      Math.floor(logicalFrameIndex),
       0,
-      this.clipEnd-this.clipStart
+      TARGET_FRAME_COUNT-1
     );
 
-    /*
-     * 不足 64 帧时，不拉伸。
-     * 超过 FBX 实际结尾后，永远保持最后一帧。
-     *
-     * 视觉上等价于：
-     *   1 ... 40 40 40 40 ... 40
-     *             ↑ 补到逻辑 Frame 64
-     */
-    const actualOffset=Math.min(
-      wantedOffset,
-      availableDuration
+    const fbxFrameIndex=Math.min(
+      logicalIndex,
+      frameCount-1
     );
 
     const sourceTime=
-      this.clipStart + actualOffset;
+      this.clipStart + fbxFrameIndex/fps;
 
-    this.setAnimationTime(sourceTime);
+    const safeSourceTime=Math.min(
+      sourceTime,
+      this.clipEnd
+    );
+
+    this.lastLogicalFrame=logicalIndex;
+    this.setAnimationTime(safeSourceTime);
   }
 
   resize(){
@@ -1134,59 +1356,173 @@ class TaskController{
       false
     );
 
+    const timeline=FBX_TIMELINE_META[this.task.id];
+
+    if(!timeline){
+      throw new Error(
+        `Missing FBX timeline metadata for ${this.task.id}`
+      );
+    }
+
     this.manualViewer=new FBXViewer(
       section.querySelector(".manual-viewer"),
       this.manualLoading,
-      true
+      true,
+      timeline.manual
     );
 
     this.animBridgeViewer=new FBXViewer(
       section.querySelector(".animbridge-viewer"),
       this.animBridgeLoading,
-      true
+      true,
+      timeline.animBridge
     );
 
     this.active=false;
     this.generation=0;
 
+    this.videoFrameRequest=null;
+    this.rafSyncRequest=null;
+    this.syncNow=null;
+
     this.bindVideo();
   }
 
+  videoTimeToLogicalFrame(mediaTime){
+    if(
+      !Number.isFinite(this.video.duration) ||
+      this.video.duration<=0
+    ){
+      return 0;
+    }
+
+    const frameDuration=
+      this.video.duration / TARGET_FRAME_COUNT;
+
+    if(!Number.isFinite(frameDuration) || frameDuration<=0){
+      return 0;
+    }
+
+    const epsilon=frameDuration*1e-6;
+
+    return THREE.MathUtils.clamp(
+      Math.floor((mediaTime+epsilon)/frameDuration),
+      0,
+      TARGET_FRAME_COUNT-1
+    );
+  }
+
   bindVideo(){
-    const sync=()=>{
-      this.manualViewer.syncWithVideo(this.video);
-      this.animBridgeViewer.syncWithVideo(this.video);
+    const sync=(mediaTime=null)=>{
+      const time=Number.isFinite(mediaTime)
+        ? mediaTime
+        : this.video.currentTime;
+
+      const logicalFrame=
+        this.videoTimeToLogicalFrame(time);
+
+      this.manualViewer.syncToLogicalFrame(logicalFrame);
+      this.animBridgeViewer.syncToLogicalFrame(logicalFrame);
     };
 
+    this.syncNow=sync;
+
     for(const event of [
+      "loadedmetadata",
       "timeupdate",
       "seeking",
-      "seeked",
-      "loadedmetadata",
-      "pause",
-      "ended"
+      "seeked"
     ]){
-      this.video.addEventListener(event,sync);
+      this.video.addEventListener(event,()=>sync());
     }
 
     this.video.addEventListener("play",()=>{
-      /* 同一时间只让一个参考视频播放 */
       for(const c of taskControllers){
         if(c!==this) c.video.pause();
       }
+
+      sync();
+      this.startPlaybackSync();
     });
 
-    const loop=()=>{
+    this.video.addEventListener("pause",()=>{
+      sync();
+      this.stopPlaybackSync();
+    });
+
+    this.video.addEventListener("ended",()=>{
+      sync(this.video.duration);
+      this.stopPlaybackSync();
+    });
+  }
+
+  startPlaybackSync(){
+    this.stopPlaybackSync();
+
+    if(typeof this.video.requestVideoFrameCallback==="function"){
+      const step=(now,metadata)=>{
+        this.videoFrameRequest=null;
+
+        if(
+          !this.active ||
+          this.video.paused ||
+          this.video.ended
+        ){
+          return;
+        }
+
+        const mediaTime=Number.isFinite(metadata?.mediaTime)
+          ? metadata.mediaTime
+          : this.video.currentTime;
+
+        this.syncNow?.(mediaTime);
+
+        this.videoFrameRequest=
+          this.video.requestVideoFrameCallback(step);
+      };
+
+      this.videoFrameRequest=
+        this.video.requestVideoFrameCallback(step);
+
+      return;
+    }
+
+    const fallback=()=>{
+      this.rafSyncRequest=null;
+
       if(
-        this.active &&
-        !this.video.paused &&
-        !this.video.ended
+        !this.active ||
+        this.video.paused ||
+        this.video.ended
       ){
-        sync();
+        return;
       }
-      requestAnimationFrame(loop);
+
+      this.syncNow?.();
+      this.rafSyncRequest=requestAnimationFrame(fallback);
     };
-    requestAnimationFrame(loop);
+
+    this.rafSyncRequest=requestAnimationFrame(fallback);
+  }
+
+  stopPlaybackSync(){
+    if(
+      this.videoFrameRequest!==null &&
+      typeof this.video.cancelVideoFrameCallback==="function"
+    ){
+      try{
+        this.video.cancelVideoFrameCallback(
+          this.videoFrameRequest
+        );
+      }catch{}
+    }
+
+    this.videoFrameRequest=null;
+
+    if(this.rafSyncRequest!==null){
+      cancelAnimationFrame(this.rafSyncRequest);
+      this.rafSyncRequest=null;
+    }
   }
 
   async activate(){
@@ -1218,8 +1554,7 @@ class TaskController{
       this.manualPlaceholder?.classList.add("hidden");
       this.animBridgePlaceholder?.classList.add("hidden");
 
-      this.manualViewer.syncWithVideo(this.video);
-      this.animBridgeViewer.syncWithVideo(this.video);
+      this.syncNow?.();
 
     }catch(error){
       if(!this.active || generation!==this.generation) return;
@@ -1238,6 +1573,7 @@ class TaskController{
     this.generation++;
     this.state.textContent="Lazy";
 
+    this.stopPlaybackSync();
     try{ this.video.pause(); }catch{}
 
     this.video.removeAttribute("src");
