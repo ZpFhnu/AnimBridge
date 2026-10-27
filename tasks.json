@@ -17,40 +17,16 @@
       "animBridgeFbx": "./assets/task02/user_a.fbx"
     },
     {
-      "id": "task03",
-      "label": "task03",
-      "originalFbx": "./assets/task03/original.fbx",
-      "referenceVideo": "./assets/task03/reference.mp4",
-      "manualFbx": "./assets/task03/user.fbx",
-      "animBridgeFbx": "./assets/task03/user_a.fbx"
-    },
-    {
       "id": "task04",
-      "label": "task04",
+      "label": "task03",
       "originalFbx": "./assets/task04/original.fbx",
       "referenceVideo": "./assets/task04/reference.mp4",
       "manualFbx": "./assets/task04/user.fbx",
       "animBridgeFbx": "./assets/task04/user_a.fbx"
     },
     {
-      "id": "task05",
-      "label": "task05",
-      "originalFbx": "./assets/task05/original.fbx",
-      "referenceVideo": "./assets/task05/reference.mp4",
-      "manualFbx": "./assets/task05/user.fbx",
-      "animBridgeFbx": "./assets/task05/user_a.fbx"
-    },
-    {
-      "id": "task06",
-      "label": "task06",
-      "originalFbx": "./assets/task06/original.fbx",
-      "referenceVideo": "./assets/task06/reference.mp4",
-      "manualFbx": "./assets/task06/user.fbx",
-      "animBridgeFbx": "./assets/task06/user_a.fbx"
-    },
-    {
       "id": "task07",
-      "label": "task07",
+      "label": "task04",
       "originalFbx": "./assets/task07/original.fbx",
       "referenceVideo": "./assets/task07/reference.mp4",
       "manualFbx": "./assets/task07/user.fbx",
@@ -58,27 +34,51 @@
     },
     {
       "id": "task08",
-      "label": "task08",
+      "label": "task05",
       "originalFbx": "./assets/task08/original.fbx",
       "referenceVideo": "./assets/task08/reference.mp4",
       "manualFbx": "./assets/task08/user.fbx",
       "animBridgeFbx": "./assets/task08/user_a.fbx"
     },
     {
-      "id": "task09",
-      "label": "task09",
-      "originalFbx": "./assets/task09/original.fbx",
-      "referenceVideo": "./assets/task09/reference.mp4",
-      "manualFbx": "./assets/task09/user.fbx",
-      "animBridgeFbx": "./assets/task09/user_a.fbx"
-    },
-    {
       "id": "task10",
-      "label": "task10",
+      "label": "task06",
       "originalFbx": "./assets/task10/original.fbx",
       "referenceVideo": "./assets/task10/reference.mp4",
       "manualFbx": "./assets/task10/user.fbx",
       "animBridgeFbx": "./assets/task10/user_a.fbx"
+    },
+    {
+      "id": "task12",
+      "label": "task07",
+      "originalFbx": "./assets/task12/original.fbx",
+      "referenceVideo": "./assets/task12/reference.mp4",
+      "manualFbx": "./assets/task12/user.fbx",
+      "animBridgeFbx": "./assets/task12/user_a.fbx"
+    },
+    {
+      "id": "task15",
+      "label": "task08",
+      "originalFbx": "./assets/task15/original.fbx",
+      "referenceVideo": "./assets/task15/reference.mp4",
+      "manualFbx": "./assets/task15/user.fbx",
+      "animBridgeFbx": "./assets/task15/user_a.fbx"
+    },
+    {
+      "id": "task03",
+      "label": "task09",
+      "originalFbx": "./assets/task03/original.fbx",
+      "referenceVideo": "./assets/task03/reference.mp4",
+      "manualFbx": "./assets/task03/user.fbx",
+      "animBridgeFbx": "./assets/task03/user_a.fbx"
+    },
+    {
+      "id": "task09",
+      "label": "task10",
+      "originalFbx": "./assets/task09/original.fbx",
+      "referenceVideo": "./assets/task09/reference.mp4",
+      "manualFbx": "./assets/task09/user.fbx",
+      "animBridgeFbx": "./assets/task09/user_a.fbx"
     },
     {
       "id": "task11",
@@ -89,16 +89,32 @@
       "animBridgeFbx": "./assets/task11/user_a.fbx"
     },
     {
-      "id": "task12",
+      "id": "task16",
       "label": "task12",
-      "originalFbx": "./assets/task12/original.fbx",
-      "referenceVideo": "./assets/task12/reference.mp4",
-      "manualFbx": "./assets/task12/user.fbx",
-      "animBridgeFbx": "./assets/task12/user_a.fbx"
+      "originalFbx": "./assets/task16/original.fbx",
+      "referenceVideo": "./assets/task16/reference.mp4",
+      "manualFbx": "./assets/task16/user.fbx",
+      "animBridgeFbx": "./assets/task16/user_a.fbx"
+    },
+    {
+      "id": "task05",
+      "label": "task13",
+      "originalFbx": "./assets/task05/original.fbx",
+      "referenceVideo": "./assets/task05/reference.mp4",
+      "manualFbx": "./assets/task05/user.fbx",
+      "animBridgeFbx": "./assets/task05/user_a.fbx"
+    },
+    {
+      "id": "task06",
+      "label": "task14",
+      "originalFbx": "./assets/task06/original.fbx",
+      "referenceVideo": "./assets/task06/reference.mp4",
+      "manualFbx": "./assets/task06/user.fbx",
+      "animBridgeFbx": "./assets/task06/user_a.fbx"
     },
     {
       "id": "task13",
-      "label": "task13",
+      "label": "task15",
       "originalFbx": "./assets/task13/original.fbx",
       "referenceVideo": "./assets/task13/reference.mp4",
       "manualFbx": "./assets/task13/user.fbx",
@@ -106,27 +122,11 @@
     },
     {
       "id": "task14",
-      "label": "task14",
+      "label": "task16",
       "originalFbx": "./assets/task14/original.fbx",
       "referenceVideo": "./assets/task14/reference.mp4",
       "manualFbx": "./assets/task14/user.fbx",
       "animBridgeFbx": "./assets/task14/user_a.fbx"
-    },
-    {
-      "id": "task15",
-      "label": "task15",
-      "originalFbx": "./assets/task15/original.fbx",
-      "referenceVideo": "./assets/task15/reference.mp4",
-      "manualFbx": "./assets/task15/user.fbx",
-      "animBridgeFbx": "./assets/task15/user_a.fbx"
-    },
-    {
-      "id": "task16",
-      "label": "task16",
-      "originalFbx": "./assets/task16/original.fbx",
-      "referenceVideo": "./assets/task16/reference.mp4",
-      "manualFbx": "./assets/task16/user.fbx",
-      "animBridgeFbx": "./assets/task16/user_a.fbx"
     }
   ]
 }
